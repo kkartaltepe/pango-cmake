@@ -1,8 +1,34 @@
-cmake_minimum_required(VERSION 2.8.0)
+cmake_minimum_required(VERSION 3.0.0)
 project(pango C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 include(GLibHelpers)
+include(AutotoolsHelpers)
+include(CMakeDependentOption)
+include(CheckIncludeFiles)
+include(CheckFunctionExists)
+include(CheckSymbolExists)
+include(CheckAnsiC)
+
+
+# Need to be defined quoted. Trying not to modify the input
+set(PACKAGE "\"pango\"")
+set(PACKAGE_BUGREPORT "\"http://bugzilla.gnome.org/enter_bug.cgi?product=pango\"")
+set(PACKAGE_NAME "\"pango\"")
+set(PACKAGE_STRING "\"pango ${PANGO_VERSION}\"")
+set(PACKAGE_TARNAME "\"pango\"")
+set(PACKAGE_URL "\"\"")
+set(PACKAGE_VERSION "\"${PANGO_VERSION}\"")
+set(VERSION "\"${PANGO_VERSION}\"")
+
+set(PANGO_VERSION_MAJOR "1"  CACHE STRING "Major Version")
+set(PANGO_VERSION_MINOR "42" CACHE STRING "Minor Version")
+set(PANGO_VERSION_MICRO "0"  CACHE STRING "Micro Version")
+set(PANGO_VERSION ${PANGO_VERSION_MAJOR}.${PANGO_VERSION_MINOR}.${PANGO_VERSION_MICRO} CACHE INTERNAL "Version tuple")
+set(PANGO_API_VERSION "${PANGO_VERSION_MAJOR}.0" CACHE INTERNAL "API version")
+set(PANGO_INTERFACE_AGE "${PANGO_VERSION_MICRO}") # Or set to 0 for odd minor versions (unstable release) 
+math(EXPR PANGO_BINARY_AGE "${PANGO_VERSION_MINOR} * 100 + ${PANGO_VERSION_MICRO}")
+
 
 find_package(PkgConfig)
 pkg_check_modules(glib REQUIRED glib-2.0)
@@ -17,6 +43,57 @@ link_directories(${glib_LIBRARY_DIRS}
   ${cairo_LIBRARY_DIRS}
   ${freetype_LIBRARY_DIRS}
   ${harfbuzz_LIBRARY_DIRS})
+
+# Library options
+cmake_dependent_option(HAVE_CAIRO "Have usable Cairo library and font backend"
+  ON "cairo_FOUND" OFF)
+pkg_check_modules(cairo_ft QUIET cairo-ft)
+cmake_dependent_option(HAVE_CAIRO_FREETYPE "Whether Cairo can use FreeType for fonts"
+  ON "cairo_ft_FOUND" OFF)
+pkg_check_modules(cairo_win32 QUIET cairo-win32)
+cmake_dependent_option(HAVE_CAIRO_WIN32 "Whether Cairo can use the Win32 GDI for fonts"
+  ON "cairo_win32_FOUND" OFF)
+pkg_check_modules(cairo_png QUIET cairo-png)
+cmake_dependent_option(HAVE_CAIRO_PNG "Whether Cairo has PNG support"
+  ON "cairo_png_FOUND" OFF)
+cmake_dependent_option(HAVE_FREETYPE "Have FreeType 2 library"
+  ON "freetype_FOUND" OFF)
+cmake_dependent_option(HAVE_LIBTHAI "Whether libthai is available"
+  ON "libthai_FOUND" OFF)
+cmake_dependent_option(HAVE_XFT "Have Xft library"
+  ON "xft_FOUND" OFF)
+
+# Compiler settings
+check_include_files(dlfcn.h HAVE_DLFCN_H)
+check_include_files(inttypes.h HAVE_INTTYPES_H)
+check_include_files(memory.h HAVE_MEMORY_H)
+check_symbol_exists(DIR ndir.h HAVE_NDIR_H)
+check_symbol_exists(DIR "sys/dir.h" HAVE_SYS_DIR_H)
+check_symbol_exists(DIR "sys/ndir.h" HAVE_SYS_NDIR_H)
+check_include_files("sys/mman.h" HAVE_SYS_MMAN_H)
+check_include_files("sys/stat.h" HAVE_SYS_STAT_H)
+check_include_files("sys/types.h" HAVE_SYS_TYPES_H)
+check_include_files(unistd.h HAVE_UNISTD_H)
+check_include_files(stdint.h HAVE_STDINT_H)
+check_include_files(stdlib.h HAVE_STDLIB_H)
+check_include_files(strings.h HAVE_STRINGS_H)
+check_include_files(string.h HAVE_STRING_H)
+check_function_exists(FcWeightFromOpenTypeDouble HAVE_FCWEIGHTFROMOPENTYPEDOUBLE)
+check_function_exists(flockfile HAVE_FLOCKFILE)
+check_function_exists(getpagesize HAVE_GETPAGESIZE)
+check_function_exists(strtok_r HAVE_STRTOK_R)
+check_function_exists(sysconf HAVE_SYSCONF)
+check_function_exists(flockfile HAVE_FLOCKFILE)
+check_ansi_c(STDC_HEADERS)
+if(MSVC)
+  set(_PANGO_EXTERN "__declspec(dllexport) extern")
+else()
+  set(_PANGO_EXTERN "__attribute__((visibility(\"default\"))) extern")
+endif()
+
+# Handle dumping out autotools config.h correctly for pango specifically.
+add_autotools_config("config.h.in" "config.h")
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(PANGO_SOURCES   
   "pango/break.c"
@@ -160,9 +237,6 @@ add_definitions(-DG_LOG_DOMAIN="Pango"
                 # -DPANGO_CURRENT_MINUS_AGE=0
 )
 
-# Setup config.h with
-# _PANGO_EXTERN => '__declspec(dllexport) extern'/'__attribute__((visibility("default"))) extern'
-
 # See cairo_dep@meson.build:258 for full cairo options to support.
 # # On windows you dont want HAVE_CAIRO_FREETYPE since it requires fontconfig
 # add_definitions(-DHAVE_CAIRO_FREETYPE=1)
@@ -183,6 +257,7 @@ if(MSVC)
 endif()
 # Make enums
 set(PANGO_ENUM_NAME "${CMAKE_CURRENT_BINARY_DIR}/pango-enum-types")
+# Bug 390877 - Don't feed pango-features.h to glib-mkenums
 add_glib_enumtypes("pango/pango-enum-types.h.template" "pango/pango-enum-types.c.template" "${PANGO_ENUM_NAME}" ${PANGO_HEADERS})
 LIST(APPEND PANGO_HEADERS "${PANGO_ENUM_NAME}.h")
 
@@ -196,7 +271,6 @@ include_directories(pango PRIVATE
   ${freetype_INCLUDE_DIRS}
   ${harfbuzz_INCLUDE_DIRS})
 
-message(${freetype_INCLUDE_DIRS})
 
 # Make the actual library
 add_library(pango SHARED ${PANGO_HEADERS} ${PANGO_SOURCES} "${PANGO_ENUM_NAME}.c" config.h)
