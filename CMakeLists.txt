@@ -1,17 +1,18 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(pango C)
 
+# add some helpers to our path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 include(GLibHelpers)
 include(AutotoolsHelpers)
+include(CheckAnsiC)
 include(CMakeDependentOption)
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(CheckSymbolExists)
-include(CheckAnsiC)
 
 
-# Need to be defined quoted. Trying not to modify the input
+# Need to be defined quoted. Trying not to modify the autotools config.h.in
 set(PACKAGE "\"pango\"")
 set(PACKAGE_BUGREPORT "\"http://bugzilla.gnome.org/enter_bug.cgi?product=pango\"")
 set(PACKAGE_NAME "\"pango\"")
@@ -26,7 +27,7 @@ set(PANGO_VERSION_MINOR "42" CACHE STRING "Minor Version")
 set(PANGO_VERSION_MICRO "0"  CACHE STRING "Micro Version")
 set(PANGO_VERSION ${PANGO_VERSION_MAJOR}.${PANGO_VERSION_MINOR}.${PANGO_VERSION_MICRO} CACHE INTERNAL "Version tuple")
 set(PANGO_API_VERSION "${PANGO_VERSION_MAJOR}.0" CACHE INTERNAL "API version")
-set(PANGO_INTERFACE_AGE "${PANGO_VERSION_MICRO}") # Or set to 0 for odd minor versions (unstable release) 
+set(PANGO_INTERFACE_AGE "${PANGO_VERSION_MICRO}") # Or set to 0 for _odd_ minor versions (unstable release) 
 math(EXPR PANGO_BINARY_AGE "${PANGO_VERSION_MINOR} * 100 + ${PANGO_VERSION_MICRO}")
 
 
@@ -36,6 +37,7 @@ pkg_check_modules(gobject REQUIRED gobject-2.0)
 pkg_check_modules(gmodule REQUIRED gmodule-2.0)
 pkg_check_modules(cairo cairo)
 pkg_check_modules(freetype freetype2)
+pkg_check_modules(fontconfig fontconfig)
 pkg_check_modules(harfbuzz harfbuzz)
 link_directories(${glib_LIBRARY_DIRS}
   ${gmodule_LIBRARY_DIRS}
@@ -49,7 +51,7 @@ cmake_dependent_option(HAVE_CAIRO "Have usable Cairo library and font backend"
   ON "cairo_FOUND" OFF)
 pkg_check_modules(cairo_ft QUIET cairo-ft)
 cmake_dependent_option(HAVE_CAIRO_FREETYPE "Whether Cairo can use FreeType for fonts"
-  ON "cairo_ft_FOUND" OFF)
+  ON "cairo_ft_FOUND;fontconfig_FOUND" OFF)
 pkg_check_modules(cairo_win32 QUIET cairo-win32)
 cmake_dependent_option(HAVE_CAIRO_WIN32 "Whether Cairo can use the Win32 GDI for fonts"
   ON "cairo_win32_FOUND" OFF)
@@ -93,6 +95,7 @@ endif()
 
 # Handle dumping out autotools config.h correctly for pango specifically.
 add_autotools_config("config.h.in" "config.h")
+set(PANGO_PRIVATE_CONFIG_HEADER "${CMAKE_CURRENT_BINARY_DIR}/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(PANGO_SOURCES   
@@ -213,33 +216,25 @@ set(PANGO_LIBRARIES ${GLIB_COMMON_LIBRARIES} mini-fribidi)
 set(PANGOWIN32_LIBRARIES pango gdi32 usp10)
 set(PANGOCAIRO_LIBRARIES pango ${cairo_LIBRARIES})
 
-if(${CAIRO_WIN32_BACKEND})
+
+if(${cairo_win32_FOUND})
   LIST(APPEND PANGOCAIRO_HEADERS "pango/pangocairo-win32.h")
   LIST(APPEND PANGOCAIRO_SOURCES "pango/pangocairo-win32font.c" "pango/pangocairo-win32fontmap.c")
   LIST(APPEND PANGOCAIRO_LIBRARIES  pangowin32 "gdi32")
 endif()
 
-# Pango defines
+# Pango defines from vs solutions
 set(PangoDummyPrefix /dummy)
 add_definitions(-DG_LOG_DOMAIN="Pango"
                 -DG_LOG_USE_STRUCTURED=1
                 -DPANGO_COMPILATION # just for pango?
                 -DPANGO_ENABLE_BACKEND
                 -DPANGO_ENABLE_ENGINE
-                # -DHAVE_CONFIG_H # Still used?
                 # -DG_DISABLE_SINGLE_INCLUDES # No clue
                 -DSYSCONFDIR="${PangoDummyPrefix}/etc"
                 -DLIBDIR="${PangoDummyPrefix}/lib"
-                # -DPANGO_VERSION_MAJOR=1
-                # -DPANGO_VERSION_MINOR=41
-                # -DPANGO_VERSION_MICRO=0
-                # -DPANGO_API_VERSION=1.0
-                # -DPANGO_CURRENT_MINUS_AGE=0
 )
 
-# See cairo_dep@meson.build:258 for full cairo options to support.
-# # On windows you dont want HAVE_CAIRO_FREETYPE since it requires fontconfig
-# add_definitions(-DHAVE_CAIRO_FREETYPE=1)
 
 # #PangoFT cflags
 # add_definitions(-DHAVE_STDINT_H=1)
@@ -259,6 +254,7 @@ endif()
 set(PANGO_ENUM_NAME "${CMAKE_CURRENT_BINARY_DIR}/pango-enum-types")
 # Bug 390877 - Don't feed pango-features.h to glib-mkenums
 add_glib_enumtypes("pango/pango-enum-types.h.template" "pango/pango-enum-types.c.template" "${PANGO_ENUM_NAME}" ${PANGO_HEADERS})
+LIST(APPEND PANGO_SOURCES "${PANGO_ENUM_NAME}.c")
 LIST(APPEND PANGO_HEADERS "${PANGO_ENUM_NAME}.h")
 
 # Setup pango includes
@@ -273,19 +269,19 @@ include_directories(pango PRIVATE
 
 
 # Make the actual library
-add_library(pango SHARED ${PANGO_HEADERS} ${PANGO_SOURCES} "${PANGO_ENUM_NAME}.c" config.h)
+add_library(pango SHARED ${PANGO_HEADERS} ${PANGO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
 target_link_libraries(pango ${PANGO_LIBRARIES})
 
 
 # Freetype2 support depends on FontConfig, probably dont care about it then
 # add_library(pangoft2 SHARED ${PANGOFT2_HEADERS} ${PANGOFT2_SOURCES} config.h)
-# target_link_libraries(pangoft2 pango ${glib_LIBRARIES} ${gmodule_LIBRARIES} ${gobject_LIBRARIES} ${freetype_LIBRARIES} ${fontconfig_LIBRARIES})
+# target_link_libraries(pangoft2 pango ${glib_LIBRARIES} ${gmodule_LIBRARIES} ${gobject_LIBRARIES} ${freetype_LIBRARIES} ${cairo_ft_LIBRARIES})
 # '-DPANGO_DISABLE_DEPRECATION_WARNINGS',
 
-add_library(pangowin32 SHARED ${PANGOWIN32_HEADERS} ${PANGOWIN32_SOURCES} config.h)
+add_library(pangowin32 SHARED ${PANGOWIN32_HEADERS} ${PANGOWIN32_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
 target_link_libraries(pangowin32 ${PANGOWIN32_LIBRARIES})
 
-add_library(pangocairo SHARED ${PANGOCAIRO_HEADERS} ${PANGOCAIRO_SOURCES} config.h)
+add_library(pangocairo SHARED ${PANGOCAIRO_HEADERS} ${PANGOCAIRO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
 target_link_libraries(pangocairo ${PANGOCAIRO_LIBRARIES})
 
 # Add an example to excercise the libraries
