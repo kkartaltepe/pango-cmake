@@ -223,6 +223,15 @@ if(${cairo_win32_FOUND})
   LIST(APPEND PANGOCAIRO_LIBRARIES  pangowin32 "gdi32")
 endif()
 
+if(fontconfig_FOUND)
+  LIST(APPEND PANGO_HEADERS pango/pangofc-decoder.h pango/pangofc-fontmap.h pango/pangofc-font.h pango/pangofc-private.h)
+  LIST(APPEND PANGO_SOURCES pango/pangofc-decoder.c pango/pangofc-fontmap.c pango/pangofc-font.c pango/pangofc-shape.c)
+  LIST(APPEND PANGOCAIRO_HEADERS "pango/pangocairo-fc.h")
+  LIST(APPEND PANGOCAIRO_SOURCES "pango/pangocairo-fcfont.c" "pango/pangocairo-fcfontmap.c")
+  LIST(APPEND PANGOCAIRO_LIBRARIES  ${fontconfig_LIBRARIES})
+endif()
+
+
 # Pango defines from vs solutions
 set(PangoDummyPrefix /dummy)
 add_definitions(-DG_LOG_DOMAIN="Pango"
@@ -269,7 +278,7 @@ include_directories(pango PRIVATE
 
 
 # Make the actual library
-add_library(pango SHARED ${PANGO_HEADERS} ${PANGO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
+add_library(pango STATIC ${PANGO_HEADERS} ${PANGO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
 target_link_libraries(pango ${PANGO_LIBRARIES})
 
 
@@ -278,15 +287,18 @@ target_link_libraries(pango ${PANGO_LIBRARIES})
 # target_link_libraries(pangoft2 pango ${glib_LIBRARIES} ${gmodule_LIBRARIES} ${gobject_LIBRARIES} ${freetype_LIBRARIES} ${cairo_ft_LIBRARIES})
 # '-DPANGO_DISABLE_DEPRECATION_WARNINGS',
 
-add_library(pangowin32 SHARED ${PANGOWIN32_HEADERS} ${PANGOWIN32_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
-target_link_libraries(pangowin32 ${PANGOWIN32_LIBRARIES})
+add_library(pangowin32 STATIC ${PANGOWIN32_HEADERS} ${PANGOWIN32_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
+# target_link_libraries(pangowin32 ${PANGOWIN32_LIBRARIES})
 
-add_library(pangocairo SHARED ${PANGOCAIRO_HEADERS} ${PANGOCAIRO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
-target_link_libraries(pangocairo ${PANGOCAIRO_LIBRARIES})
+add_library(pangocairo STATIC ${PANGOCAIRO_HEADERS} ${PANGOCAIRO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
+target_compile_definitions(pangocairo PUBLIC ${cairo_CFLAGS})
+# target_link_libraries(pangocairo ${PANGOCAIRO_LIBRARIES})
 
 # Add an example to excercise the libraries
 add_executable(cairosimple examples/cairosimple.c)
-target_link_libraries(cairosimple pango pangocairo)
+target_link_libraries(cairosimple PRIVATE pangocairo pangowin32 pango ${PANGO_LIBRARIES} ${PANGOWIN32_LIBRARIES} ${fontconfig_LIBRARIES} ${cairo_LIBRARIES}  ${harfbuzz_LIBRARIES})
+
+subdirs(pango-view)
 
 install(TARGETS pango pangowin32 pangocairo cairosimple
     ARCHIVE DESTINATION lib
