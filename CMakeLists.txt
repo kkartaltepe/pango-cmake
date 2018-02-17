@@ -147,7 +147,6 @@ set(PANGO_HEADERS
   "pango/pango-context.h"
   "pango/pango-coverage.h"
   "pango/pango-engine.h"
-  "pango/pango-features.h"
   "pango/pango-font.h"
   "pango/pango-fontmap.h"
   "pango/pango-fontset.h"
