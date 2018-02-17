@@ -36,9 +36,21 @@ pkg_check_modules(glib REQUIRED glib-2.0)
 pkg_check_modules(gobject REQUIRED gobject-2.0)
 pkg_check_modules(gmodule REQUIRED gmodule-2.0)
 pkg_check_modules(cairo cairo)
+if(NOT cairo_FOUND)
+  find_package(cairo)
+endif()
 pkg_check_modules(freetype freetype2)
+if(NOT freetype_FOUND)
+  find_package(freetype)
+endif()
 pkg_check_modules(fontconfig fontconfig)
+if(NOT fontconfig_FOUND)
+  find_package(fontconfig)
+endif()
 pkg_check_modules(harfbuzz harfbuzz)
+if(NOT harfbuzz_FOUND)
+  find_package(harfbuzz)
+endif()
 link_directories(${glib_LIBRARY_DIRS}
   ${gmodule_LIBRARY_DIRS}
   ${gobject_LIBRARY_DIRS}
@@ -94,7 +106,7 @@ else()
 endif()
 
 # Handle dumping out autotools config.h correctly for pango specifically.
-add_autotools_config("config.h.in" "config.h")
+add_autotools_config("config.h.win32.in" "config.h")
 set(PANGO_PRIVATE_CONFIG_HEADER "${CMAKE_CURRENT_BINARY_DIR}/config.h")
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
@@ -154,7 +166,8 @@ set(PANGO_HEADERS
   "pango/pango-utils.h"
   "pango/pango-version-macros.h"
 )
-
+add_autotools_config("pango-features.h.cmake.in" "pango/pango-features.h")
+list(APPEND PANGO_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/pango/pango-features.h")
 
 set(FRIBIDI_SOURCES 
   "pango/mini-fribidi/fribidi.c"
@@ -239,6 +252,7 @@ add_definitions(-DG_LOG_DOMAIN="Pango"
                 -DPANGO_COMPILATION # just for pango?
                 -DPANGO_ENABLE_BACKEND
                 -DPANGO_ENABLE_ENGINE
+                ${CAIRO_C_FLAGS}
                 # -DG_DISABLE_SINGLE_INCLUDES # No clue
                 -DSYSCONFDIR="${PangoDummyPrefix}/etc"
                 -DLIBDIR="${PangoDummyPrefix}/lib"
@@ -260,7 +274,7 @@ if(MSVC)
   add_definitions(/FI"msvc_recommended_pragmas.h")
 endif()
 # Make enums
-set(PANGO_ENUM_NAME "${CMAKE_CURRENT_BINARY_DIR}/pango-enum-types")
+set(PANGO_ENUM_NAME "${CMAKE_BINARY_DIR}/pango-enum-types")
 # Bug 390877 - Don't feed pango-features.h to glib-mkenums
 add_glib_enumtypes("pango/pango-enum-types.h.template" "pango/pango-enum-types.c.template" "${PANGO_ENUM_NAME}" ${PANGO_HEADERS})
 LIST(APPEND PANGO_SOURCES "${PANGO_ENUM_NAME}.c")
@@ -269,9 +283,10 @@ LIST(APPEND PANGO_HEADERS "${PANGO_ENUM_NAME}.h")
 # Setup pango includes
 include_directories(pango PRIVATE
   ${CMAKE_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/pango # Needed for generated sources to find pango.h
+  ${CMAKE_BINARY_DIR}/pango # Needed for generated sources to find pango.h
+  ${CMAKE_BINARY_DIR}
   ${glib_INCLUDE_DIRS}
-  ${cairo_INCLUDE_DIRS}
+  ${CAIRO_INCLUDE_DIRS}
   ${png_INCLUDE_DIRS}
   ${freetype_INCLUDE_DIRS}
   ${harfbuzz_INCLUDE_DIRS})
@@ -288,19 +303,19 @@ target_link_libraries(pango ${PANGO_LIBRARIES})
 # '-DPANGO_DISABLE_DEPRECATION_WARNINGS',
 
 add_library(pangowin32 STATIC ${PANGOWIN32_HEADERS} ${PANGOWIN32_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
-# target_link_libraries(pangowin32 ${PANGOWIN32_LIBRARIES})
+target_link_libraries(pangowin32 ${PANGOWIN32_LIBRARIES})
 
 add_library(pangocairo STATIC ${PANGOCAIRO_HEADERS} ${PANGOCAIRO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
 target_compile_definitions(pangocairo PUBLIC ${cairo_CFLAGS})
-# target_link_libraries(pangocairo ${PANGOCAIRO_LIBRARIES})
+target_link_libraries(pangocairo ${PANGOCAIRO_LIBRARIES})
 
-# Add an example to excercise the libraries
-add_executable(cairosimple examples/cairosimple.c)
-target_link_libraries(cairosimple PRIVATE pangocairo pangowin32 pango ${PANGO_LIBRARIES} ${PANGOWIN32_LIBRARIES} ${fontconfig_LIBRARIES} ${cairo_LIBRARIES}  ${harfbuzz_LIBRARIES})
+# Add an example to excercise the libraries,left out for static builds
+# add_executable(cairosimple examples/cairosimple.c)
+# target_link_libraries(cairosimple PRIVATE pangocairo pangowin32 pango ${PANGO_LIBRARIES} ${PANGOWIN32_LIBRARIES} ${fontconfig_LIBRARIES} ${cairo_LIBRARIES}  ${harfbuzz_LIBRARIES})
 
-subdirs(pango-view)
+# subdirs(pango-view)
 
-install(TARGETS pango pangowin32 pangocairo cairosimple
+install(TARGETS pango pangowin32 pangocairo
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
