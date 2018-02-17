@@ -274,7 +274,7 @@ if(MSVC)
   add_definitions(/FI"msvc_recommended_pragmas.h")
 endif()
 # Make enums
-set(PANGO_ENUM_NAME "${CMAKE_BINARY_DIR}/pango-enum-types")
+set(PANGO_ENUM_NAME "${CMAKE_BINARY_DIR}/pango/pango-enum-types")
 # Bug 390877 - Don't feed pango-features.h to glib-mkenums
 add_glib_enumtypes("pango/pango-enum-types.h.template" "pango/pango-enum-types.c.template" "${PANGO_ENUM_NAME}" ${PANGO_HEADERS})
 LIST(APPEND PANGO_SOURCES "${PANGO_ENUM_NAME}.c")
