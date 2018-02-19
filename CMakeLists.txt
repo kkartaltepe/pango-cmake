@@ -32,46 +32,52 @@ math(EXPR PANGO_BINARY_AGE "${PANGO_VERSION_MINOR} * 100 + ${PANGO_VERSION_MICRO
 
 
 find_package(PkgConfig)
-pkg_check_modules(glib REQUIRED glib-2.0)
-pkg_check_modules(gobject REQUIRED gobject-2.0)
-pkg_check_modules(gmodule REQUIRED gmodule-2.0)
-pkg_check_modules(cairo cairo)
-if(NOT cairo_FOUND)
+pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(GOBJECT REQUIRED gobject-2.0)
+pkg_check_modules(GMODULE REQUIRED gmodule-2.0)
+pkg_check_modules(CAIRO cairo)
+if(NOT CAIRO_FOUND)
   find_package(cairo)
 endif()
-pkg_check_modules(freetype freetype2)
-if(NOT freetype_FOUND)
+pkg_check_modules(FREETYPE freetype2)
+if(NOT FREETYPE_FOUND)
   find_package(freetype)
 endif()
-pkg_check_modules(fontconfig fontconfig)
-if(NOT fontconfig_FOUND)
+pkg_check_modules(FONTCONFIG fontconfig)
+if(NOT FONTCONFIG_FOUND)
   find_package(fontconfig)
 endif()
-pkg_check_modules(harfbuzz harfbuzz)
-if(NOT harfbuzz_FOUND)
+pkg_check_modules(HARFBUZZ harfbuzz)
+if(NOT HARFBUZZ_FOUND)
   find_package(harfbuzz)
 endif()
-link_directories(${glib_LIBRARY_DIRS}
-  ${gmodule_LIBRARY_DIRS}
-  ${gobject_LIBRARY_DIRS}
-  ${cairo_LIBRARY_DIRS}
-  ${freetype_LIBRARY_DIRS}
-  ${harfbuzz_LIBRARY_DIRS})
+link_directories(${GLIB_LIBRARY_DIRS}
+  ${GMODULE_LIBRARY_DIRS}
+  ${GOBJECT_LIBRARY_DIRS}
+  ${CAIRO_LIBRARY_DIRS}
+  ${FREETYPE_LIBRARY_DIRS}
+  ${HARFBUZZ_LIBRARY_DIRS})
 
 # Library options
 cmake_dependent_option(HAVE_CAIRO "Have usable Cairo library and font backend"
-  ON "cairo_FOUND" OFF)
-pkg_check_modules(cairo_ft QUIET cairo-ft)
+  ON "CAIRO_FOUND" OFF)
+if(NOT CAIRO_FT_FOUND)
+  pkg_check_modules(CAIRO_FT QUIET cairo-ft)
+endif()
 cmake_dependent_option(HAVE_CAIRO_FREETYPE "Whether Cairo can use FreeType for fonts"
-  ON "cairo_ft_FOUND;fontconfig_FOUND" OFF)
-pkg_check_modules(cairo_win32 QUIET cairo-win32)
+  ON "CAIRO_FT_FOUND;FONTCONFIG_FOUND" OFF)
+if(NOT CAIRO_WIN32_FOUND)
+  pkg_check_modules(CAIRO_WIN32 QUIET cairo-win32)
+endif()
 cmake_dependent_option(HAVE_CAIRO_WIN32 "Whether Cairo can use the Win32 GDI for fonts"
-  ON "cairo_win32_FOUND" OFF)
-pkg_check_modules(cairo_png QUIET cairo-png)
+  ON "CAIRO_WIN32_FOUND" OFF)
+if(NOT CAIRO_PNG_FOUND)
+  pkg_check_modules(CAIRO_PNG QUIET cairo-png)
+endif()
 cmake_dependent_option(HAVE_CAIRO_PNG "Whether Cairo has PNG support"
-  ON "cairo_png_FOUND" OFF)
+  ON "CAIRO_PNG_FOUND" OFF)
 cmake_dependent_option(HAVE_FREETYPE "Have FreeType 2 library"
-  ON "freetype_FOUND" OFF)
+  ON "FREETYPE_FOUND" OFF)
 cmake_dependent_option(HAVE_LIBTHAI "Whether libthai is available"
   ON "libthai_FOUND" OFF)
 cmake_dependent_option(HAVE_XFT "Have Xft library"
@@ -205,6 +211,9 @@ set(PANGOWIN32_HEADERS
     "pango/pangowin32.h"
 )
 
+set(PANGOWIN32_PRIVATE_HEADERS
+  "pango/pangowin32-private.h")
+
 set(PANGOWIN32_SOURCES
     "pango/pangowin32.c"
     "pango/pangowin32-fontcache.c"
@@ -216,26 +225,29 @@ set(PANGOCAIRO_HEADERS
     "pango/pangocairo.h"
 )
 
+set(PANGOCAIRO_PRIVATE_HEADERS
+  "pango/pangocairo-private.h")
+
 set(PANGOCAIRO_SOURCES
-    "pango/pangocairo-context.c"
-    "pango/pangocairo-font.c"
-    "pango/pangocairo-fontmap.c"
-    "pango/pangocairo-render.c"
+  "pango/pangocairo-context.c"
+  "pango/pangocairo-font.c"
+  "pango/pangocairo-fontmap.c"
+  "pango/pangocairo-render.c"
 )
 
-set(GLIB_COMMON_LIBRARIES ${glib_LIBRARIES} ${gmodule_LIBRARIES} ${gobject_LIBRARIES})
+set(GLIB_COMMON_LIBRARIES ${GLIB_LIBRARIES} ${gmodule_LIBRARIES} ${gobject_LIBRARIES})
 set(PANGO_LIBRARIES ${GLIB_COMMON_LIBRARIES} mini-fribidi)
 set(PANGOWIN32_LIBRARIES pango gdi32 usp10)
 set(PANGOCAIRO_LIBRARIES pango ${cairo_LIBRARIES})
 
 
-if(${cairo_win32_FOUND})
+if(CAIRO_WIN32_FOUND)
   LIST(APPEND PANGOCAIRO_HEADERS "pango/pangocairo-win32.h")
   LIST(APPEND PANGOCAIRO_SOURCES "pango/pangocairo-win32font.c" "pango/pangocairo-win32fontmap.c")
   LIST(APPEND PANGOCAIRO_LIBRARIES  pangowin32 "gdi32")
 endif()
 
-if(fontconfig_FOUND)
+if(FONTCONFIG_FOUND)
   LIST(APPEND PANGO_HEADERS pango/pangofc-decoder.h pango/pangofc-fontmap.h pango/pangofc-font.h pango/pangofc-private.h)
   LIST(APPEND PANGO_SOURCES pango/pangofc-decoder.c pango/pangofc-fontmap.c pango/pangofc-font.c pango/pangofc-shape.c)
   LIST(APPEND PANGOCAIRO_HEADERS "pango/pangocairo-fc.h")
@@ -265,7 +277,7 @@ add_definitions(-DG_LOG_DOMAIN="Pango"
 add_library(mini-fribidi STATIC ${FRIBIDI_SOURCES} config.h)
 target_link_libraries(mini-fribidi ${gobject_LIBRARIES}) # Depends on m on linux
 target_include_directories(mini-fribidi PRIVATE
-  ${glib_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}
+  ${GLIB_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}
 )
 
 # Pango Library
@@ -284,11 +296,13 @@ include_directories(pango PRIVATE
   ${CMAKE_SOURCE_DIR}
   ${CMAKE_BINARY_DIR}/pango # Needed for generated sources to find pango.h
   ${CMAKE_BINARY_DIR}
-  ${glib_INCLUDE_DIRS}
+  ${GLIB_INCLUDE_DIRS}
   ${CAIRO_INCLUDE_DIRS}
-  ${png_INCLUDE_DIRS}
-  ${freetype_INCLUDE_DIRS}
-  ${harfbuzz_INCLUDE_DIRS})
+  ${PNG_INCLUDE_DIRS}
+  ${FREETYPE_INCLUDE_DIRS}
+  ${FREETYPE_INCLUDE_DIR_ft2build} #Why is this not in include_dir or freetype...
+  ${HARFBUZZ_INCLUDE_DIRS}
+  ${FONTCONFIG_INCLUDE_DIRS})
 
 
 # Make the actual library
@@ -301,10 +315,10 @@ target_link_libraries(pango ${PANGO_LIBRARIES})
 # target_link_libraries(pangoft2 pango ${glib_LIBRARIES} ${gmodule_LIBRARIES} ${gobject_LIBRARIES} ${freetype_LIBRARIES} ${cairo_ft_LIBRARIES})
 # '-DPANGO_DISABLE_DEPRECATION_WARNINGS',
 
-add_library(pangowin32 STATIC ${PANGOWIN32_HEADERS} ${PANGOWIN32_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
+add_library(pangowin32 STATIC ${PANGOWIN32_HEADERS} ${PANGOWIN32_PRIVATE_HEADERS} ${PANGOWIN32_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
 target_link_libraries(pangowin32 ${PANGOWIN32_LIBRARIES})
 
-add_library(pangocairo STATIC ${PANGOCAIRO_HEADERS} ${PANGOCAIRO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
+add_library(pangocairo STATIC ${PANGOCAIRO_HEADERS} ${PANGOCAIRO_PRIVATE_HEADERS} ${PANGOCAIRO_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
 target_compile_definitions(pangocairo PUBLIC ${cairo_CFLAGS})
 target_link_libraries(pangocairo ${PANGOCAIRO_LIBRARIES})
 
@@ -314,7 +328,7 @@ target_link_libraries(pangocairo ${PANGOCAIRO_LIBRARIES})
 
 # subdirs(pango-view)
 
-install(TARGETS pango pangowin32 pangocairo
+install(TARGETS pango mini-fribidi pangowin32 pangocairo
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)

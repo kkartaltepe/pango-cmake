@@ -1,0 +1,149 @@
+/* config.h.  Generated from config.h.in by configure.  */
+/* config.h.in.  Generated from configure.in by autoheader.  */
+/* Actually, this version of config.h is manually edited from the above */
+
+/* Have usable Cairo library and font backend */
+#define HAVE_CAIRO
+
+/* Whether Cairo can use FreeType for fonts */
+#cmakedefine HAVE_CAIRO_FREETYPE
+
+/* Whether Cairo has PDF support */
+#cmakedefine HAVE_CAIRO_PDF
+
+/* Whether Cairo has PNG support */
+#cmakedefine HAVE_CAIRO_PNG
+
+/* Whether Cairo has PS support */
+#cmakedefine HAVE_CAIRO_PS
+
+/* Whether Cairo can use Quartz for fonts */
+#cmakedefine HAVE_CAIRO_QUARTZ
+
+/* Whether Cairo can use the Win32 GDI for fonts */
+#cmakedefine HAVE_CAIRO_WIN32
+
+/* Whether Cairo has Xlib support */
+#cmakedefine HAVE_CAIRO_XLIB 
+
+/* Whether CoreText is available on the system */
+#cmakedefine HAVE_CORE_TEXT
+
+/* Define to 1 if you have the <dirent.h> header file, and it defines `DIR'.
+   */
+#cmakedefine HAVE_DIRENT_H
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#cmakedefine HAVE_DLFCN_H
+
+/* Define to 1 if you have the `flockfile' function. */
+#cmakedefine HAVE_FLOCKFILE
+
+/* Have FreeType 2 library */
+#cmakedefine HAVE_FREETYPE
+
+/* Define to 1 if you have the `getpagesize' function. */
+#cmakedefine HAVE_GETPAGESIZE
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#cmakedefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#cmakedefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
+#cmakedefine HAVE_NDIR_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#cmakedefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#cmakedefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#cmakedefine HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#cmakedefine HAVE_STRING_H
+
+/* Define to 1 if you have the `strtok_r' function. */
+#cmakedefine HAVE_STRTOK_R
+
+/* Define to 1 if you have the `sysconf' function. */
+#cmakedefine HAVE_SYSCONF
+
+/* Define to 1 if you have the <sys/dir.h> header file, and it defines `DIR'.
+   */
+#cmakedefine HAVE_SYS_DIR_H
+
+/* Define to 1 if you have the <sys/mman.h> header file. */
+#cmakedefine HAVE_SYS_MMAN_H
+
+/* Define to 1 if you have the <sys/ndir.h> header file, and it defines `DIR'.
+   */
+#cmakedefine HAVE_SYS_NDIR_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#cmakedefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#cmakedefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H
+
+/* Have Xft library */
+#cmakedefine HAVE_XFT
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#define LT_OBJDIR ".libs/"
+
+/* Name of package */
+#define PACKAGE "pango"
+
+/* Define to the address where bug reports for this package should be sent. */
+#define PACKAGE_BUGREPORT "http://bugzilla.gnome.org/enter_bug.cgi?product=pango"
+
+/* Define to the full name of this package. */
+#define PACKAGE_NAME "pango"
+
+/* Define to the full name and version of this package. */
+#define PACKAGE_STRING "pango @PANGO_VERSION@"
+
+/* Define to the one symbol short name of this package. */
+#define PACKAGE_TARNAME "pango"
+
+/* Define to the home page for this package. */
+#define PACKAGE_URL ""
+
+/* Define to the version of this package. */
+#define PACKAGE_VERSION "@PANGO_VERSION@"
+
+/* PANGO binary age */
+#define PANGO_BINARY_AGE @PANGO_BINARY_AGE@
+
+/* PANGO interface age */
+#define PANGO_INTERFACE_AGE @PANGO_INTERFACE_AGE@
+
+/* PANGO major version */
+// #define PANGO_VERSION_MAJOR @PANGO_VERSION_MAJOR@
+
+/* PANGO micro version */
+// #define PANGO_VERSION_MICRO @PANGO_VERSION_MICRO@
+
+/* PANGO minor version */
+// #define PANGO_VERSION_MINOR @PANGO_VERSION_MINOR@
+
+/* Define to 1 if you have the ANSI C header files. */
+#define STDC_HEADERS 1
+
+/* Version number of package */
+#define VERSION "@PANGO_VERSION@"
+
+/* defines how to decorate public symbols while building */
+#ifdef _MSC_VER
+#define _PANGO_EXTERN __declspec(dllexport) extern
+#else
+#define _PANGO_EXTERN __attribute__((visibility("default"))) __declspec(dllexport) extern
+#endif
