@@ -199,8 +199,11 @@ set(PANGOFT2_PUBLIC_SOURCES
 
 set(PANGOFT2_SOURCES
     ${PANGOFT2_PUBLIC_SOURCES}
+    pango/pangofc-private.h
+    pango/pangoft2-private.h
     "pango/pangoft2-fontmap.c"
     "pango/pangoft2-render.c"
+    pango/pango-ot-private.h
     "pango/pango-ot-buffer.c"
     "pango/pango-ot-info.c"
     "pango/pango-ot-ruleset.c"
@@ -235,10 +238,11 @@ set(PANGOCAIRO_SOURCES
   "pango/pangocairo-render.c"
 )
 
-set(GLIB_COMMON_LIBRARIES ${GLIB_LIBRARIES} ${gmodule_LIBRARIES} ${gobject_LIBRARIES})
+set(GLIB_COMMON_LIBRARIES ${GLIB_LIBRARIES} ${GMODULE_LIBRARIES} ${GOBJECT_LIBRARIES})
 set(PANGO_LIBRARIES ${GLIB_COMMON_LIBRARIES} mini-fribidi)
 set(PANGOWIN32_LIBRARIES pango gdi32 usp10)
 set(PANGOCAIRO_LIBRARIES pango ${cairo_LIBRARIES})
+set(PANGOFT2_LIBRARIES pango ${freetype_LIBRARIES} ${fontconfig_LIBRARIES})
 
 
 if(CAIRO_WIN32_FOUND)
@@ -248,8 +252,6 @@ if(CAIRO_WIN32_FOUND)
 endif()
 
 if(FONTCONFIG_FOUND)
-  LIST(APPEND PANGO_HEADERS pango/pangofc-decoder.h pango/pangofc-fontmap.h pango/pangofc-font.h pango/pangofc-private.h)
-  LIST(APPEND PANGO_SOURCES pango/pangofc-decoder.c pango/pangofc-fontmap.c pango/pangofc-font.c pango/pangofc-shape.c)
   LIST(APPEND PANGOCAIRO_HEADERS "pango/pangocairo-fc.h")
   LIST(APPEND PANGOCAIRO_SOURCES "pango/pangocairo-fcfont.c" "pango/pangocairo-fcfontmap.c")
   LIST(APPEND PANGOCAIRO_LIBRARIES  ${fontconfig_LIBRARIES})
@@ -310,9 +312,9 @@ add_library(pango STATIC ${PANGO_HEADERS} ${PANGO_SOURCES} ${PANGO_PRIVATE_CONFI
 target_link_libraries(pango ${PANGO_LIBRARIES})
 
 
-# Freetype2 support depends on FontConfig, probably dont care about it then
-# add_library(pangoft2 SHARED ${PANGOFT2_HEADERS} ${PANGOFT2_SOURCES} config.h)
-# target_link_libraries(pangoft2 pango ${glib_LIBRARIES} ${gmodule_LIBRARIES} ${gobject_LIBRARIES} ${freetype_LIBRARIES} ${cairo_ft_LIBRARIES})
+# Freetype2 support
+add_library(pangoft2 STATIC ${PANGOFT2_HEADERS} ${PANGOFT2_SOURCES} config.h)
+target_link_libraries(pangoft2 pango ${PANGOFT2_LIBRARIES})
 # '-DPANGO_DISABLE_DEPRECATION_WARNINGS',
 
 add_library(pangowin32 STATIC ${PANGOWIN32_HEADERS} ${PANGOWIN32_PRIVATE_HEADERS} ${PANGOWIN32_SOURCES} ${PANGO_PRIVATE_CONFIG_HEADER})
@@ -326,9 +328,9 @@ target_link_libraries(pangocairo ${PANGOCAIRO_LIBRARIES})
 # add_executable(cairosimple examples/cairosimple.c)
 # target_link_libraries(cairosimple PRIVATE pangocairo pangowin32 pango ${PANGO_LIBRARIES} ${PANGOWIN32_LIBRARIES} ${fontconfig_LIBRARIES} ${cairo_LIBRARIES}  ${harfbuzz_LIBRARIES})
 
-# subdirs(pango-view)
+subdirs(pango-view)
 
-install(TARGETS pango mini-fribidi pangowin32 pangocairo
+install(TARGETS pango mini-fribidi pangowin32 pangocairo pangoft2
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
@@ -337,5 +339,6 @@ install(FILES
     ${PANGO_HEADERS}
     ${PANGOWIN32_HEADERS}
     ${PANGOCAIRO_HEADERS}
+    ${PANGOFT2_HEADERS}
     DESTINATION include/pango
     )
